@@ -1,4 +1,7 @@
 pub struct IntoInter<T>(List<T>);
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>,
+}
 
 pub struct List<T> {
     head: Link<T>,
@@ -38,9 +41,25 @@ impl<T> List<T> {
             node.elem
         })
     }
-    
+
     pub fn into_iter(self) -> IntoInter<T> {
         IntoInter(self)
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            next: self.head.as_deref(),
+        }
+    }
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_deref();
+            &node.elem
+        })
     }
 }
 
@@ -105,17 +124,30 @@ mod test {
         assert_eq!(list.peek(), Some(&42));
         assert_eq!(list.pop(), Some(42));
     }
-    
+
     #[test]
     fn into_iter() {
         let mut list = List::new();
         list.push(1);
         list.push(2);
         list.push(3);
-        
+
         let mut iter = list.into_iter();
         assert_eq!(iter.next(), Some(3));
         assert_eq!(iter.next(), Some(2));
         assert_eq!(iter.next(), Some(1));
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = List::new();
+        list.push(1);
+        list.push(2);
+        list.push(3);
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&1));
     }
 }
